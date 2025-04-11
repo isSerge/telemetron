@@ -7,10 +7,12 @@
 use std::error::Error;
 
 use axum::{
-    Router,
+    Json, Router,
     response::IntoResponse,
     routing::{get, post},
 };
+use serde::Deserialize;
+use serde_json::Value;
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -26,8 +28,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn ingest_handler() -> impl IntoResponse {
-    log::info!("Ingesting data");
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Event {
+    source_id: u64,
+    // TODO: should be an enum
+    r#type: String,
+    // TODO: should be a timestamp
+    timestamp: String,
+    data: Option<Value>,
+}
+
+async fn ingest_handler(body: Json<Event>) -> impl IntoResponse {
+    log::info!("Ingesting data: {:?}", body);
 
     "Ingested data"
 }
