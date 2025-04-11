@@ -8,6 +8,7 @@ mod config;
 mod error;
 mod event;
 mod http;
+mod state;
 
 use std::error::Error;
 

@@ -1,15 +1,18 @@
 use axum::{
     Json, Router,
-    extract::Path,
+    extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
 };
 use tokio::net::TcpListener;
 
-use crate::{error::Error, event::Event};
+use crate::{error::Error, event::Event, state::AppState};
 
-async fn ingest_handler(body: Json<Event>) -> Result<impl IntoResponse, Error> {
+async fn ingest_handler(
+    State(state): State<AppState>,
+    body: Json<Event>,
+) -> Result<impl IntoResponse, Error> {
     log::info!("Ingesting data: {:?}", body);
 
     // TODO: implement the ingestion logic
@@ -22,13 +25,14 @@ async fn ingest_handler(body: Json<Event>) -> Result<impl IntoResponse, Error> {
     Ok((StatusCode::CREATED, "Success"))
 }
 
-async fn stats_handler() -> Result<impl IntoResponse, Error> {
+async fn stats_handler(State(state): State<AppState>) -> Result<impl IntoResponse, Error> {
     log::info!("Stats");
 
     Ok((StatusCode::OK, "Stats"))
 }
 
 async fn stats_by_source_id_handler(
+    State(state): State<AppState>,
     Path(source_id): Path<u64>,
 ) -> Result<impl IntoResponse, Error> {
     log::info!("Stats by source id: {}", source_id);
@@ -45,11 +49,15 @@ async fn not_found_handler() -> impl IntoResponse {
 pub async fn run_server(host: &str, port: u16) -> Result<(), Error> {
     log::info!("Starting Telemetron");
 
+    // Initialize the application state
+    let app_state = AppState::new();
+
     let routes = Router::new()
         .route("/ingest", post(ingest_handler))
         .route("/stats", get(stats_handler))
         .route("/stats/{source_id}", get(stats_by_source_id_handler))
-        .fallback(not_found_handler);
+        .fallback(not_found_handler)
+        .with_state(app_state);
 
     let listener = TcpListener::bind(format!("{}:{}", host, port)).await?;
 
