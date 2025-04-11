@@ -57,13 +57,20 @@ async fn stats_by_source_id_handler() -> impl IntoResponse {
     "Stats by source id"
 }
 
+async fn not_found_handler() -> impl IntoResponse {
+    log::info!("Not found");
+
+    "Not found"
+}
+
 async fn run_server() -> Result<(), Box<dyn Error>> {
     log::info!("Starting Telemetron");
 
     let routes = Router::new()
         .route("/ingest", post(ingest_handler))
         .route("/stats", get(stats_handler))
-        .route("/stats/{source_id}", get(stats_by_source_id_handler));
+        .route("/stats/{source_id}", get(stats_by_source_id_handler))
+        .fallback(not_found_handler);
 
     let listener = TcpListener::bind("127.0.0.1:3000").await?;
 
