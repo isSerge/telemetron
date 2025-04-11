@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -8,6 +9,6 @@ pub struct Event {
     // TODO: should be an enum
     r#type: String,
     // TODO: should be a timestamp
-    timestamp: String,
+    timestamp: DateTime<Utc>,
     data: Option<Value>,
 }
