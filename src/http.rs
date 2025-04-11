@@ -1,5 +1,7 @@
 use axum::{
     Json, Router,
+    extract::Path,
+    http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
 };
@@ -7,7 +9,7 @@ use tokio::net::TcpListener;
 
 use crate::{error::Error, event::Event};
 
-async fn ingest_handler(body: Json<Event>) -> impl IntoResponse {
+async fn ingest_handler(body: Json<Event>) -> Result<impl IntoResponse, Error> {
     log::info!("Ingesting data: {:?}", body);
 
     // TODO: implement the ingestion logic
@@ -17,25 +19,27 @@ async fn ingest_handler(body: Json<Event>) -> impl IntoResponse {
     // TODO: return a 400 response if the event is invalid
     // TODO: return a 500 response if the event is valid but the ingestion fails
 
-    "Ingested data"
+    Ok((StatusCode::CREATED, "Success"))
 }
 
-async fn stats_handler() -> impl IntoResponse {
+async fn stats_handler() -> Result<impl IntoResponse, Error> {
     log::info!("Stats");
 
-    "Stats"
+    Ok((StatusCode::OK, "Stats"))
 }
 
-async fn stats_by_source_id_handler() -> impl IntoResponse {
-    log::info!("Stats by source id");
+async fn stats_by_source_id_handler(
+    Path(source_id): Path<u64>,
+) -> Result<impl IntoResponse, Error> {
+    log::info!("Stats by source id: {}", source_id);
 
-    "Stats by source id"
+    Ok((StatusCode::OK, format!("Stats by source id: {}", source_id)))
 }
 
 async fn not_found_handler() -> impl IntoResponse {
     log::info!("Not found");
 
-    "Not found"
+    (StatusCode::NOT_FOUND, "Not found")
 }
 
 pub async fn run_server() -> Result<(), Error> {
