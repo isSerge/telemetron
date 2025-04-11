@@ -11,12 +11,15 @@ pub enum Error {
     Io(#[from] io::Error),
     #[error("Server error: {0}")]
     Server(#[from] AxumError),
+    #[error("Not found")]
+    NotFound,
 }
 
 // TODO: consider returning json body for errors
 impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         match self {
+            Self::NotFound => (axum::http::StatusCode::NOT_FOUND, self.to_string()).into_response(),
             Self::InvalidEvent =>
                 (axum::http::StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::Io(e) =>
