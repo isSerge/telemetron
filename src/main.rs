@@ -5,6 +5,7 @@
 //! TODO: Add a description
 
 mod error;
+mod event;
 mod http;
 
 use std::error::Error;

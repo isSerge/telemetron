@@ -3,22 +3,9 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
-use serde::Deserialize;
-use serde_json::Value;
 use tokio::net::TcpListener;
 
-use crate::error::Error;
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Event {
-    source_id: u64,
-    // TODO: should be an enum
-    r#type: String,
-    // TODO: should be a timestamp
-    timestamp: String,
-    data: Option<Value>,
-}
+use crate::{error::Error, event::Event};
 
 async fn ingest_handler(body: Json<Event>) -> impl IntoResponse {
     log::info!("Ingesting data: {:?}", body);
