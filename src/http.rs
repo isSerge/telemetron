@@ -42,7 +42,7 @@ async fn not_found_handler() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Not found")
 }
 
-pub async fn run_server() -> Result<(), Error> {
+pub async fn run_server(host: &str, port: u16) -> Result<(), Error> {
     log::info!("Starting Telemetron");
 
     let routes = Router::new()
@@ -51,7 +51,7 @@ pub async fn run_server() -> Result<(), Error> {
         .route("/stats/{source_id}", get(stats_by_source_id_handler))
         .fallback(not_found_handler);
 
-    let listener = TcpListener::bind("127.0.0.1:3000").await?;
+    let listener = TcpListener::bind(format!("{}:{}", host, port)).await?;
 
     log::info!("Listening on {}", listener.local_addr()?);
 
