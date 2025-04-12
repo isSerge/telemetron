@@ -11,12 +11,16 @@ pub enum Error {
     Io(#[from] io::Error),
     #[error("Server error: {0}")]
     Server(#[from] AxumError),
+    #[error("Internal server error: {0}")]
+    InternalServerError(String),
 }
 
 // TODO: consider returning json body for errors
 impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         match self {
+            Self::InternalServerError(msg) =>
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg).into_response(),
             Self::InvalidEvent =>
                 (axum::http::StatusCode::BAD_REQUEST, self.to_string()).into_response(),
             Self::Io(e) =>

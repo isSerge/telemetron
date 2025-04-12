@@ -11,7 +11,7 @@ pub type EventReceiver = mpsc::Receiver<Event>;
 #[derive(Debug, Clone)]
 pub struct AppState {
     storage: Arc<DashMap<u64, Event>>,
-    sender: EventSender,
+    pub sender: EventSender,
 }
 
 impl AppState {
