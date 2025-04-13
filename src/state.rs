@@ -2,7 +2,7 @@ use crate::common_types::{EventSender, EventsMap};
 
 #[derive(Debug, Clone)]
 pub struct AppState {
-    events_map: EventsMap,
+    pub events_map: EventsMap,
     pub sender: EventSender,
 }
 
