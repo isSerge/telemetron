@@ -10,10 +10,8 @@ pub enum EventType {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Event {
-    source_id: u64,
-    // TODO: should be an enum
-    r#type: EventType,
-    // TODO: should be a timestamp
-    timestamp: DateTime<Utc>,
-    data: Option<Value>,
+    pub source_id: u64,
+    pub r#type: EventType,
+    pub timestamp: DateTime<Utc>,
+    pub data: Option<Value>,
 }

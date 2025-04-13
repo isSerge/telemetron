@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     Json, Router,
     extract::{Path, State},
@@ -5,9 +7,10 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
+use dashmap::DashMap;
 use tokio::{net::TcpListener, sync::mpsc};
 
-use crate::{error::Error, event::Event, state::AppState};
+use crate::{error::Error, event::Event, processor::Processor, state::AppState};
 
 async fn ingest_handler(
     State(state): State<AppState>,
@@ -58,11 +61,18 @@ pub async fn run_server(host: &str, port: u16) -> Result<(), Error> {
     const CAPACITY: usize = 100;
 
     // Create a channel for sending events
-    let (sender, _) = mpsc::channel::<Event>(CAPACITY);
-    // Initialize the application state
-    let app_state = AppState::new(sender);
+    let (sender, receiver) = mpsc::channel::<Event>(CAPACITY);
 
-    // TODO: spawn a task for event processor (using channel receiver)
+    // Create a map to store events by source id
+    let events_map = Arc::new(DashMap::new());
+    // Initialize the application state
+    let app_state = AppState::new(sender, events_map.clone());
+
+    // Spawn the processor
+    tokio::spawn(async move {
+        let mut processor = Processor::new(receiver, events_map);
+        processor.run().await;
+    });
 
     let routes = Router::new()
         .route("/ingest", post(ingest_handler))

@@ -4,10 +4,12 @@
 
 //! TODO: Add a description
 
+mod common_types;
 mod config;
 mod error;
 mod event;
 mod http;
+mod processor;
 mod state;
 
 use std::error::Error;
