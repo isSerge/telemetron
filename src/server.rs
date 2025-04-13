@@ -36,7 +36,15 @@ async fn ingest_handler(
 async fn stats_handler(State(state): State<AppState>) -> Result<impl IntoResponse, Error> {
     log::info!("Stats");
 
-    Ok((StatusCode::OK, "Stats"))
+    let sources_count = state.events_map.len();
+    let events_count: usize = state.events_map.iter().map(|x| x.len()).sum();
+
+    let stats = Json(serde_json::json!({
+        "sources_count": sources_count,
+        "events_count": events_count,
+    }));
+
+    Ok(stats)
 }
 
 async fn stats_by_source_id_handler(
@@ -45,7 +53,13 @@ async fn stats_by_source_id_handler(
 ) -> Result<impl IntoResponse, Error> {
     log::info!("Stats by source id: {}", source_id);
 
-    Ok((StatusCode::OK, format!("Stats by source id: {}", source_id)))
+    let events_count = state.events_map.get(&source_id).map_or(0, |v| v.len());
+    let stats = Json(serde_json::json!({
+        "source_id": source_id,
+        "events_count": events_count,
+    }));
+
+    Ok(stats)
 }
 
 async fn not_found_handler() -> impl IntoResponse {
