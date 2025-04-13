@@ -15,18 +15,28 @@ pub enum Error {
     InternalServerError(String),
 }
 
+const INTERNAL_ERROR_MESSAGE: &str = "Internal server error";
+
 // TODO: consider returning json body for errors
 impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::InternalServerError(msg) =>
-                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg).into_response(),
-            Self::InvalidEvent =>
-                (axum::http::StatusCode::BAD_REQUEST, self.to_string()).into_response(),
-            Self::Io(e) =>
-                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-            Self::Server(e) =>
-                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            Self::InternalServerError(msg) => {
+                log::error!("Internal server error: {}", msg);
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
+                    .into_response()
+            }
+            Self::InvalidEvent => (axum::http::StatusCode::BAD_REQUEST, "").into_response(),
+            Self::Io(e) => {
+                log::error!("IO error: {}", e);
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
+                    .into_response()
+            }
+            Self::Server(e) => {
+                log::error!("Server error: {}", e);
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
+                    .into_response()
+            }
         }
     }
 }
