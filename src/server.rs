@@ -10,7 +10,7 @@ use axum::{
 use dashmap::DashMap;
 use tokio::{net::TcpListener, sync::mpsc};
 
-use crate::{error::Error, event::Event, processor::Processor, state::AppState};
+use crate::{config::Config, error::Error, event::Event, processor::Processor, state::AppState};
 
 async fn ingest_handler(
     State(state): State<AppState>,
@@ -68,14 +68,11 @@ async fn not_found_handler() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Not found")
 }
 
-pub async fn run_server(host: &str, port: u16) -> Result<(), Error> {
+pub async fn run_server(config: Config) -> Result<(), Error> {
     log::info!("Starting Telemetron");
 
-    // TODO: move to config
-    const CAPACITY: usize = 100;
-
     // Create a channel for sending events
-    let (sender, receiver) = mpsc::channel::<Event>(CAPACITY);
+    let (sender, receiver) = mpsc::channel::<Event>(config.channel_capacity);
 
     // Create a map to store events by source id
     let events_map = Arc::new(DashMap::new());
@@ -95,7 +92,7 @@ pub async fn run_server(host: &str, port: u16) -> Result<(), Error> {
         .fallback(not_found_handler)
         .with_state(app_state);
 
-    let listener = TcpListener::bind(format!("{}:{}", host, port)).await?;
+    let listener = TcpListener::bind(format!("{}:{}", config.http_host, config.http_port)).await?;
 
     log::info!("Listening on {}", listener.local_addr()?);
 

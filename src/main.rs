@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let config = Config::new();
 
-    if let Err(err) = run_server(&config.http_host, config.http_port).await {
+    if let Err(err) = run_server(config).await {
         log::error!("Error: {}", err);
         std::process::exit(1);
     }
