@@ -8,14 +8,14 @@ mod common_types;
 mod config;
 mod error;
 mod event;
-mod http;
 mod processor;
+mod server;
 mod state;
 
 use std::error::Error;
 
 use config::Config;
-use http::run_server;
+use server::run_server;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
