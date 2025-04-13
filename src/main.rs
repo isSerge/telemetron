@@ -19,13 +19,15 @@ use server::run_server;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Initialize the logger
-    env_logger::init();
+    // Initialize the tracing subscriber
+    tracing_subscriber::fmt().init();
 
     let config = Config::new();
 
+    tracing::info!("Config: {:?}", config);
+
     if let Err(err) = run_server(config).await {
-        log::error!("Error: {}", err);
+        tracing::error!("Error: {}", err);
         std::process::exit(1);
     }
 

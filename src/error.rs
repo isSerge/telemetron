@@ -22,18 +22,18 @@ impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
         match self {
             Self::InternalServerError(msg) => {
-                log::error!("Internal server error: {}", msg);
+                tracing::error!("Internal server error: {}", msg);
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
                     .into_response()
             }
             Self::InvalidEvent => (axum::http::StatusCode::BAD_REQUEST, "").into_response(),
             Self::Io(e) => {
-                log::error!("IO error: {}", e);
+                tracing::error!("IO error: {}", e);
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
                     .into_response()
             }
             Self::Server(e) => {
-                log::error!("Server error: {}", e);
+                tracing::error!("Server error: {}", e);
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
                     .into_response()
             }
