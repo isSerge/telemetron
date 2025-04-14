@@ -1,6 +1,6 @@
 use std::io;
 
-use axum::{Error as AxumError, response::IntoResponse};
+use axum::{Error as AxumError, Json, response::IntoResponse};
 
 use crate::event::EventValidationError;
 
@@ -19,29 +19,31 @@ pub enum Error {
 
 const INTERNAL_ERROR_MESSAGE: &str = "Internal server error";
 
-// TODO: consider returning json body for errors
 impl IntoResponse for Error {
     fn into_response(self) -> axum::response::Response {
-        match self {
+        let (status, error_message) = match self {
             Self::InternalServerError(msg) => {
                 tracing::error!("Internal server error: {}", msg);
-                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
-                    .into_response()
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE.to_string())
             }
             Self::InvalidEvent(e) => {
                 tracing::warn!("Invalid event rejected: {}", e);
-                (axum::http::StatusCode::BAD_REQUEST, e.to_string()).into_response()
+                (axum::http::StatusCode::BAD_REQUEST, e.to_string())
             }
             Self::Io(e) => {
                 tracing::error!("IO error: {}", e);
-                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
-                    .into_response()
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE.to_string())
             }
             Self::Server(e) => {
                 tracing::error!("Server error: {}", e);
-                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
-                    .into_response()
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE.to_string())
             }
-        }
+        };
+
+        let body = Json(serde_json::json!({
+            "error": error_message,
+        }));
+
+        (status, body).into_response()
     }
 }
