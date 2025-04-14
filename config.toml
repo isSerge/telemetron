@@ -6,8 +6,8 @@ port = 3000
 channel_capacity = 100
 
 [validation.plugins]
-SourceId = { allowed = [123] }
-EventType = { allowed = ["Heartbeat"] }
+SourceIdValidator = { allowed = [123] }
+EventTypeValidator = { allowed = ["Heartbeat"] }
 
 [processing.plugins]
-Storage = {}
+StorageProcessor = {}
