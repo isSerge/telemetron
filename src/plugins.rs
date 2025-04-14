@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     common_types::{EventProcessors, EventValidators},
     config::{
-        Config, EventTypeValidationConfig, SourceIdValidationConfig,
+        Config, EventTypeValidationConfig, NoParamsValidationConfig, SourceIdValidationConfig,
     },
     processing::{EventProcessor, storage::StorageProcessor},
     validation::{EventValidator, event_type::EventTypeValidator, source_id::SourceIdValidator},
@@ -61,8 +61,11 @@ pub fn build_processors(config: &Config) -> Result<EventProcessors, PluginError>
 
         let plugin_box: Box<dyn EventProcessor + Send + Sync> = match name.as_str() {
             "StorageProcessor" => {
-                let processor = StorageProcessor;
-                Box::new(processor)
+                // Deserialize into NoParams to ensure config format is valid ({})
+                let _config: NoParamsValidationConfig = params.clone().try_into().map_err(|e| {
+                    PluginError::ParameterDeserialization { plugin_name: name.clone(), source: e }
+                })?;
+                Box::new(StorageProcessor)
             }
             _ => {
                 tracing::error!(plugin_name = name, "Unknown plugin name");

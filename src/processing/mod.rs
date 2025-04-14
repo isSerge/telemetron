@@ -13,7 +13,7 @@ pub trait EventProcessor: Send + Sync {
     /// Process an event.
     async fn process_event(
         &self,
-        events_map: &mut EventsMap,
+        events_map: &EventsMap,
         event: &Event,
     ) -> Result<(), ProcessingError>;
 

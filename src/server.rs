@@ -31,6 +31,7 @@ async fn ingest_handler(
     let event = event.0;
 
     for validator in state.validators.iter() {
+        tracing::info!("Validating event with {}", validator.name());
         if let Err(err) = validator.validate(&event) {
             tracing::warn!("Event validation failed: {}", err);
             return Err(Error::InvalidEvent(err));

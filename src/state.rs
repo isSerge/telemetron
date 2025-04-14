@@ -9,6 +9,7 @@ use crate::{
 pub struct AppState {
     pub events_map: EventsMap,
     pub sender: EventSender,
+    // TODO: consider removing
     pub config: Arc<Config>,
     pub validators: EventValidators,
 }

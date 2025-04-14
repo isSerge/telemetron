@@ -8,7 +8,7 @@ pub struct StorageProcessor;
 impl EventProcessor for StorageProcessor {
     async fn process_event(
         &self,
-        events_map: &mut EventsMap,
+        events_map: &EventsMap,
         event: &Event,
     ) -> Result<(), ProcessingError> {
         let mut source_events = events_map.entry(event.source_id).or_default();

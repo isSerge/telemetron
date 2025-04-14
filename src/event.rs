@@ -33,14 +33,3 @@ pub enum EventValidationError {
     #[error("Disallowed event type: {0}")]
     DisallowedEventType(EventType),
 }
-
-impl From<EventValidationError> for Event {
-    fn from(err: EventValidationError) -> Self {
-        match err {
-            EventValidationError::DisallowedSourceId(source_id) =>
-                Event { source_id, r#type: EventType::Heartbeat, timestamp: Utc::now(), data: None },
-            EventValidationError::DisallowedEventType(event_type) =>
-                Event { source_id: 0, r#type: event_type, timestamp: Utc::now(), data: None },
-        }
-    }
-}
