@@ -4,18 +4,18 @@ use serde::Deserialize;
 
 use crate::event::EventType;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct HttpConfig {
     pub host: String,
     pub port: u16,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ProcessorConfig {
     pub channel_capacity: usize,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct EventValidationConfig {
     #[serde(default)]
     allowed_source_ids: HashSet<u64>,
@@ -23,7 +23,7 @@ pub struct EventValidationConfig {
     allowed_event_types: HashSet<EventType>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub http: HttpConfig,
     pub processor: ProcessorConfig,

@@ -21,10 +21,9 @@ async fn ingest_handler(
 ) -> Result<impl IntoResponse, Error> {
     tracing::info!("Ingest request");
 
-    // TODO: validate the event
-    // TODO: return a 400 response if the event is invalid
+    let event = event.0;
 
-    match state.sender.send(event.0).await {
+    match state.sender.send(event).await {
         Ok(_) => {
             tracing::info!("Event sent to channel");
             Ok((StatusCode::ACCEPTED, "Success"))
@@ -75,12 +74,12 @@ pub async fn run_server(config: Config) -> Result<(), Error> {
     tracing::info!("Starting Telemetron");
 
     // Create a channel for sending events
-    let (sender, receiver) = mpsc::channel::<Event>(config.channel_capacity);
+    let (sender, receiver) = mpsc::channel::<Event>(config.processor.channel_capacity);
 
     // Create a map to store events by source id
     let events_map = Arc::new(DashMap::new());
     // Initialize the application state
-    let app_state = AppState::new(sender, events_map.clone());
+    let app_state = AppState::new(sender, events_map.clone(), config.clone());
 
     // Spawn the processor
     tokio::spawn(async move {
@@ -100,7 +99,7 @@ pub async fn run_server(config: Config) -> Result<(), Error> {
         )
         .with_state(app_state);
 
-    let listener = TcpListener::bind(format!("{}:{}", config.http_host, config.http_port)).await?;
+    let listener = TcpListener::bind(format!("{}:{}", config.http.host, config.http.port)).await?;
 
     tracing::info!("Listening on {}", listener.local_addr()?);
 
