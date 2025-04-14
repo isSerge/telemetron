@@ -14,6 +14,7 @@ impl StorageProcessor {
     }
 }
 
+#[async_trait::async_trait]
 impl EventProcessor for StorageProcessor {
     async fn process_event(&self, event: Event) {
         let process_span = tracing::info_span!("process_event", source_id = event.source_id);
