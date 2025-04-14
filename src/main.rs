@@ -22,10 +22,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize the tracing subscriber
     tracing_subscriber::fmt().init();
 
-    let config = Config::try_load().map_err(|e| {
-        tracing::error!("Failed to load config: {}", e);
-        std::process::exit(1);
-    })?;
+    let config = match Config::try_load() {
+        Ok(config) => {
+            tracing::info!("Config loaded successfully");
+            config
+        }
+        Err(err) => {
+            tracing::error!("Failed to load config: {}", err);
+            std::process::exit(1);
+        }
+    };
 
     if let Err(err) = run_server(config).await {
         tracing::error!("Error: {}", err);
