@@ -31,7 +31,7 @@ pub struct Config {
 }
 
 #[derive(Debug, thiserror::Error)]
-enum ConfigError {
+pub enum ConfigError {
     #[error("Failed to load config file: {0}")]
     LoadError(#[from] config::ConfigError),
 
