@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::Value;
@@ -5,6 +7,14 @@ use serde_json::Value;
 #[derive(Debug, Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum EventType {
     Heartbeat,
+}
+
+impl Display for EventType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EventType::Heartbeat => write!(f, "Heartbeat"),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -18,23 +28,19 @@ pub struct Event {
 
 #[derive(Debug, thiserror::Error)]
 pub enum EventValidationError {
-    #[error("Invalid source_id: {0}")]
-    InvalidSourceId(u64),
-    #[error("Invalid event type")]
-    InvalidEventType,
+    #[error("Disallowed source_id: {0}")]
+    DisallowedSourceId(u64),
+    #[error("Disallowed event type: {0}")]
+    DisallowedEventType(EventType),
 }
 
 impl From<EventValidationError> for Event {
     fn from(err: EventValidationError) -> Self {
         match err {
-            EventValidationError::InvalidSourceId(source_id) =>
+            EventValidationError::DisallowedSourceId(source_id) =>
                 Event { source_id, r#type: EventType::Heartbeat, timestamp: Utc::now(), data: None },
-            EventValidationError::InvalidEventType => Event {
-                source_id: 0,
-                r#type: EventType::Heartbeat,
-                timestamp: Utc::now(),
-                data: None,
-            },
+            EventValidationError::DisallowedEventType(event_type) =>
+                Event { source_id: 0, r#type: event_type, timestamp: Utc::now(), data: None },
         }
     }
 }

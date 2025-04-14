@@ -11,6 +11,7 @@ mod event;
 mod processor;
 mod server;
 mod state;
+mod validation;
 
 use std::error::Error;
 
