@@ -16,6 +16,18 @@ pub struct HttpConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct ProcessorConfig {
     pub channel_capacity: usize,
+    #[serde(default = "default_batch_size")]
+    pub batch_size: usize,
+    #[serde(default = "default_batch_timeout")]
+    pub batch_timeout: u64,
+}
+
+fn default_batch_size() -> usize {
+    100
+}
+
+fn default_batch_timeout() -> u64 {
+    1000
 }
 
 // Plugin specific config

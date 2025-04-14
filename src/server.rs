@@ -102,10 +102,12 @@ pub async fn run_server(
     // Initialize the application state
     let app_state = AppState::new(sender, events_map.clone(), config.clone(), validators);
 
+    // Create another config clone - to be moved into the processor
+    let config_clone = config.clone();
     // Spawn the processor
     tokio::spawn(async move {
-        let mut processor = Processor::new(receiver, events_map, processors);
-        processor.run().await;
+        let mut processor = Processor::new(events_map, processors, config_clone);
+        processor.run(receiver).await;
     });
 
     let routes = Router::new()

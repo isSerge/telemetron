@@ -15,7 +15,7 @@ pub trait EventProcessor: Send + Sync {
     async fn process_event(
         &self,
         events_map: &EventsMap,
-        event: &Event,
+        events: &[Event],
     ) -> Result<(), ProcessingError>;
 
     /// Processor name (for logging purposes).
