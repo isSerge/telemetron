@@ -23,7 +23,7 @@ impl Processor {
                 tracing::info!("Processing event");
                 for plugin in self.plugins.iter() {
                     tracing::info!("Processing with plugin: {}", plugin.name());
-                    match plugin.process_event(&event).await {
+                    match plugin.process_event(&mut self.events_map, &event).await {
                         Ok(_) => tracing::info!("Plugin {} processed event", plugin.name()),
                         Err(err) => {
                             tracing::error!(
