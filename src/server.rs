@@ -93,7 +93,7 @@ pub async fn run_server(
     let events_map = Arc::new(DashMap::new());
 
     // Initialize the application state
-    let app_state = AppState::new(sender, events_map.clone(), config.clone());
+    let app_state = AppState::new(sender, events_map.clone(), config.clone(), validators);
 
     // Spawn the processor
     tokio::spawn(async move {

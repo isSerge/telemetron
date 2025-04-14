@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use super::{EventValidationError, EventValidator};
 use crate::{config::SourceIdValidationConfig, event::Event};
 
+#[derive(Debug)]
 pub struct SourceIdValidator {
     pub allowed_ids: HashSet<u64>,
 }

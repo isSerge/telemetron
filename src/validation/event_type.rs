@@ -6,6 +6,7 @@ use crate::{
     event::{Event, EventType},
 };
 
+#[derive(Debug)]
 pub struct EventTypeValidator {
     pub allowed_types: HashSet<EventType>,
 }
