@@ -17,7 +17,7 @@ impl Display for EventType {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Event {
     pub source_id: u64,

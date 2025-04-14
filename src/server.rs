@@ -97,7 +97,7 @@ pub async fn run_server(
 
     // Spawn the processor
     tokio::spawn(async move {
-        let mut processor = Processor::new(receiver, events_map);
+        let mut processor = Processor::new(receiver, events_map, processors);
         processor.run().await;
     });
 

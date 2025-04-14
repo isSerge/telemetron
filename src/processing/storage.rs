@@ -1,6 +1,4 @@
-use tracing::Instrument;
-
-use super::EventProcessor;
+use super::{EventProcessor, ProcessingError};
 use crate::{common_types::EventsMap, event::Event};
 
 #[derive(Debug)]
@@ -16,18 +14,11 @@ impl StorageProcessor {
 
 #[async_trait::async_trait]
 impl EventProcessor for StorageProcessor {
-    async fn process_event(&self, event: Event) {
-        let process_span = tracing::info_span!("process_event", source_id = event.source_id);
+    async fn process_event(&self, event: &Event) -> Result<(), ProcessingError> {
+        let mut source_events = self.events_map.entry(event.source_id).or_default();
+        source_events.push(event.clone());
 
-        async {
-            tracing::info!("Storing event");
-            let mut source_events = self.events_map.entry(event.source_id).or_default();
-            source_events.push(event);
-            tracing::info!("Event stored");
-            // TODO: consider batching
-        }
-        .instrument(process_span)
-        .await
+        Ok(())
     }
 
     fn name(&self) -> &'static str {

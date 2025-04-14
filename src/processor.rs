@@ -1,28 +1,39 @@
 use tracing::Instrument;
 
-use crate::common_types::{EventReceiver, EventsMap};
+use crate::common_types::{EventProcessors, EventReceiver, EventsMap};
 
 pub struct Processor {
     receiver: EventReceiver,
     events_map: EventsMap,
+    plugins: EventProcessors,
 }
 
 impl Processor {
-    pub fn new(receiver: EventReceiver, events_map: EventsMap) -> Self {
-        Processor { receiver, events_map }
+    pub fn new(receiver: EventReceiver, events_map: EventsMap, plugins: EventProcessors) -> Self {
+        Processor { receiver, events_map, plugins }
     }
 
     #[tracing::instrument(skip(self))]
     pub async fn run(&mut self) {
+        tracing::info!("Starting processor");
         while let Some(event) = self.receiver.recv().await {
-            let process_span = tracing::info_span!("process_event", source_id = event.source_id);
+            let process_span = tracing::info_span!("process_event", source_id = event.source_id, event_type = ?event.r#type);
 
             async {
-                tracing::info!("Storing event");
-                let mut source_events = self.events_map.entry(event.source_id).or_default();
-                source_events.push(event);
-                tracing::info!("Event stored");
-                // TODO: consider batching
+                tracing::info!("Processing event");
+                for plugin in self.plugins.iter() {
+                    tracing::info!("Processing with plugin: {}", plugin.name());
+                    match plugin.process_event(&event).await {
+                        Ok(_) => tracing::info!("Plugin {} processed event", plugin.name()),
+                        Err(err) => {
+                            tracing::error!(
+                                "Plugin {} failed to process event: {}",
+                                plugin.name(),
+                                err
+                            );
+                        }
+                    }
+                }
             }
             .instrument(process_span)
             .await
