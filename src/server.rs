@@ -23,6 +23,9 @@ async fn ingest_handler(
 
     let event = event.0;
 
+    // Validate the event
+    event.validate(&state.config)?;
+
     match state.sender.send(event).await {
         Ok(_) => {
             tracing::info!("Event sent to channel");
