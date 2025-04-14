@@ -31,7 +31,9 @@ impl Processor {
                                 plugin.name(),
                                 err
                             );
-                        }
+                        } /* TODO: add retry logic
+                           * TODO: send failed events to a dead letter queue
+                           */
                     }
                 }
             }
