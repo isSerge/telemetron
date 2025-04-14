@@ -1,0 +1,10 @@
+[http]
+host = "0.0.0.0"
+port = 3000
+
+[proccessor]
+capacity = 100
+
+[validation]
+allowed_source_ids = [123]
+allowed_event_types = ["Heartbeat"]
