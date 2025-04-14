@@ -2,8 +2,6 @@ use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::config::Config;
-
 #[derive(Debug, Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum EventType {
     Heartbeat,
@@ -38,19 +36,5 @@ impl From<EventValidationError> for Event {
                 data: None,
             },
         }
-    }
-}
-
-impl Event {
-    pub fn validate(&self, config: &Config) -> Result<(), EventValidationError> {
-        if !config.is_source_id_allowed(self.source_id) {
-            return Err(EventValidationError::InvalidSourceId(self.source_id));
-        }
-
-        if !config.is_event_type_allowed(&self.r#type) {
-            return Err(EventValidationError::InvalidEventType);
-        }
-
-        Ok(())
     }
 }
