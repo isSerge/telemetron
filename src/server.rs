@@ -12,7 +12,14 @@ use tokio::{net::TcpListener, sync::mpsc};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::Level;
 
-use crate::{config::Config, error::Error, event::Event, processor::Processor, state::AppState};
+use crate::{
+    common_types::{EventProcessors, EventValidators},
+    config::Config,
+    error::Error,
+    event::Event,
+    processor::Processor,
+    state::AppState,
+};
 
 #[tracing::instrument(skip(state), fields(source_id = event.source_id))]
 async fn ingest_handler(
@@ -72,7 +79,11 @@ async fn not_found_handler() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Not found")
 }
 
-pub async fn run_server(config: Arc<Config>) -> Result<(), Error> {
+pub async fn run_server(
+    config: Arc<Config>,
+    validators: EventValidators,
+    processors: EventProcessors,
+) -> Result<(), Error> {
     tracing::info!("Starting Telemetron");
 
     // Create a channel for sending events

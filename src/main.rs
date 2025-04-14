@@ -8,6 +8,7 @@ mod common_types;
 mod config;
 mod error;
 mod event;
+mod plugins;
 mod processing;
 mod processor;
 mod server;
@@ -38,7 +39,31 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let config = Arc::new(config);
 
-    if let Err(err) = run_server(config).await {
+    // Build validator plugins
+    let validators = match plugins::build_validators(&config) {
+        Ok(validators) => {
+            tracing::info!("{} validators loaded successfully", validators.len());
+            validators
+        }
+        Err(err) => {
+            tracing::error!("Failed to load validators: {}", err);
+            std::process::exit(1);
+        }
+    };
+
+    // Build processor plugins
+    let processors = match plugins::build_processors(&config) {
+        Ok(processors) => {
+            tracing::info!("{} processors loaded successfully", processors.len());
+            processors
+        }
+        Err(err) => {
+            tracing::error!("Failed to load processors: {}", err);
+            std::process::exit(1);
+        }
+    };
+
+    if let Err(err) = run_server(config, validators, processors).await {
         tracing::error!("Error: {}", err);
         std::process::exit(1);
     }
