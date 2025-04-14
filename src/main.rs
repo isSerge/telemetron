@@ -8,6 +8,7 @@ mod common_types;
 mod config;
 mod error;
 mod event;
+mod processing;
 mod processor;
 mod server;
 mod state;
