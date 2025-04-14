@@ -5,6 +5,9 @@ port = 3000
 [processor]
 channel_capacity = 100
 
-[event_validation]
-allowed_source_ids = [123]
-allowed_event_types = ["Heartbeat"]
+[validation.plugins]
+SourceId = { allowed = [123] }
+EventType = { allowed = ["Heartbeat"] }
+
+[processing.plugins]
+Storage = {}

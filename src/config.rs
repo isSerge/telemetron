@@ -1,4 +1,7 @@
-use std::{collections::HashSet, env, io};
+use std::{
+    collections::{HashMap, HashSet},
+    env, io,
+};
 
 use serde::Deserialize;
 
@@ -15,19 +18,44 @@ pub struct ProcessorConfig {
     pub channel_capacity: usize,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+// Plugin specific config
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(deny_unknown_fields)]
+pub struct SourceIdValidationConfig {
+    #[serde(default)]
+    pub allowed: HashSet<u64>,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(deny_unknown_fields)]
+pub struct EventTypeValidationConfig {
+    #[serde(default)]
+    pub allowed: HashSet<EventType>,
+}
+
+/// Config struct for plugins that do not require any parameters
+#[derive(Debug, Deserialize, Clone, Default)]
+#[serde(deny_unknown_fields)]
+pub struct NoParamsValidationConfig {}
+
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct EventValidationConfig {
     #[serde(default)]
-    allowed_source_ids: HashSet<u64>,
+    pub plugins: HashMap<String, toml::Value>,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct ProcessingConfig {
     #[serde(default)]
-    allowed_event_types: HashSet<EventType>,
+    pub plugins: HashMap<String, toml::Value>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub http: HttpConfig,
     pub processor: ProcessorConfig,
-    pub event_validation: EventValidationConfig,
+    pub validation: EventValidationConfig,
+    pub processing: ProcessingConfig,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -52,20 +80,5 @@ impl Config {
         let settings = config_builder.build()?;
 
         settings.try_deserialize::<Config>().map_err(ConfigError::LoadError)
-    }
-
-    // helpers
-    pub fn is_source_id_allowed(&self, source_id: u64) -> bool {
-        if self.event_validation.allowed_source_ids.is_empty() {
-            return true;
-        }
-        self.event_validation.allowed_source_ids.contains(&source_id)
-    }
-
-    pub fn is_event_type_allowed(&self, event_type: &EventType) -> bool {
-        if self.event_validation.allowed_event_types.is_empty() {
-            return true;
-        }
-        self.event_validation.allowed_event_types.contains(event_type)
     }
 }
