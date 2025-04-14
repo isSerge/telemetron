@@ -14,7 +14,7 @@ mod server;
 mod state;
 mod validation;
 
-use std::error::Error;
+use std::{error::Error, sync::Arc};
 
 use config::Config;
 use server::run_server;
@@ -24,6 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize the tracing subscriber
     tracing_subscriber::fmt().init();
 
+    // Load the configuration
     let config = match Config::try_load() {
         Ok(config) => {
             tracing::info!("Config loaded successfully");
@@ -34,6 +35,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             std::process::exit(1);
         }
     };
+
+    let config = Arc::new(config);
 
     if let Err(err) = run_server(config).await {
         tracing::error!("Error: {}", err);

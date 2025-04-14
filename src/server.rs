@@ -72,7 +72,7 @@ async fn not_found_handler() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Not found")
 }
 
-pub async fn run_server(config: Config) -> Result<(), Error> {
+pub async fn run_server(config: Arc<Config>) -> Result<(), Error> {
     tracing::info!("Starting Telemetron");
 
     // Create a channel for sending events
@@ -80,9 +80,6 @@ pub async fn run_server(config: Config) -> Result<(), Error> {
 
     // Create a map to store events by source id
     let events_map = Arc::new(DashMap::new());
-
-    // Create config arc
-    let config = Arc::new(config);
 
     // Initialize the application state
     let app_state = AppState::new(sender, events_map.clone(), config.clone());
