@@ -2,11 +2,13 @@ use std::io;
 
 use axum::{Error as AxumError, response::IntoResponse};
 
+use crate::event::EventValidationError;
+
 // TODO: add more custom error types
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Invalid event")]
-    InvalidEvent,
+    InvalidEvent(#[from] EventValidationError),
     #[error("IO error: {0}")]
     Io(#[from] io::Error),
     #[error("Server error: {0}")]
@@ -26,7 +28,10 @@ impl IntoResponse for Error {
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
                     .into_response()
             }
-            Self::InvalidEvent => (axum::http::StatusCode::BAD_REQUEST, "").into_response(),
+            Self::InvalidEvent(e) => {
+                tracing::warn!("Invalid event rejected: {}", e);
+                (axum::http::StatusCode::BAD_REQUEST, e.to_string()).into_response()
+            }
             Self::Io(e) => {
                 tracing::error!("IO error: {}", e);
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE)
