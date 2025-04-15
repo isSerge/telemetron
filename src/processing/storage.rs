@@ -1,7 +1,12 @@
 use std::collections::HashMap;
 
 use super::{EventProcessor, ProcessingError};
-use crate::{common_types::EventsMap, event::Event};
+use crate::{
+    common_types::EventsMap,
+    config::NoParamsValidationConfig,
+    event::Event,
+    plugins::{PluginError, ProcessingPluginFactory},
+};
 
 #[derive(Debug, Default)]
 pub struct StorageProcessor;
@@ -42,5 +47,29 @@ impl EventProcessor for StorageProcessor {
 
     fn name(&self) -> &'static str {
         "StorageProcessor"
+    }
+}
+
+/// Constructs a StorageProcessor plugin.
+/// This function is called by the plugin factory to create a new instance of
+/// the plugin.
+fn construct_storage_processor(
+    config_params: toml::Value,
+) -> Result<Box<dyn EventProcessor + Send + Sync>, PluginError> {
+    // StorageProcessor does not require any parameters, but keep deserialization
+    // for consistency with other plugins
+    let _config: NoParamsValidationConfig =
+        config_params.try_into().map_err(|e| PluginError::ParameterDeserialization {
+            plugin_name: "StorageProcessor".to_string(),
+            source: e,
+        })?;
+    Ok(Box::new(StorageProcessor))
+}
+
+// Submit plugin to an inventory
+inventory::submit! {
+  ProcessingPluginFactory {
+        name: "StorageProcessor",
+        constructor: construct_storage_processor,
     }
 }

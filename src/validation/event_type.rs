@@ -4,6 +4,7 @@ use super::{EventValidationError, EventValidator};
 use crate::{
     config::EventTypeValidationConfig,
     event::{Event, EventType},
+    plugins::{PluginError, ValidationPluginFactory},
 };
 
 #[derive(Debug)]
@@ -34,5 +35,29 @@ impl EventValidator for EventTypeValidator {
         } else {
             Err(EventValidationError::DisallowedEventType(event.r#type.clone()))
         }
+    }
+}
+
+/// Constructs an EventTypeValidator from the given parameters.
+/// This function is called by the plugin factory to create a new instance of
+/// the plugin.
+/// It deserializes the parameters from TOML format and creates a new
+/// EventTypeValidator instance.
+fn construct_event_type_validator(
+    config_params: toml::Value,
+) -> Result<Box<dyn EventValidator + Send + Sync>, PluginError> {
+    let config: EventTypeValidationConfig =
+        config_params.try_into().map_err(|e| PluginError::ParameterDeserialization {
+            plugin_name: "EventTypeValidator".to_string(),
+            source: e,
+        })?;
+    Ok(Box::new(EventTypeValidator::new(config)))
+}
+
+// Submit plugin to an inventory
+inventory::submit! {
+  ValidationPluginFactory {
+        name: "EventTypeValidator",
+        constructor: construct_event_type_validator,
     }
 }

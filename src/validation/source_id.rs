@@ -1,7 +1,11 @@
 use std::collections::HashSet;
 
 use super::{EventValidationError, EventValidator};
-use crate::{config::SourceIdValidationConfig, event::Event};
+use crate::{
+    config::SourceIdValidationConfig,
+    event::Event,
+    plugins::{PluginError, ValidationPluginFactory},
+};
 
 #[derive(Debug)]
 pub struct SourceIdValidator {
@@ -31,5 +35,29 @@ impl EventValidator for SourceIdValidator {
         } else {
             Err(EventValidationError::DisallowedSourceId(event.source_id))
         }
+    }
+}
+
+/// Constructs a SourceIdValidator from the given parameters.
+/// This function is called by the plugin factory to create a new instance
+/// of the plugin.
+/// It deserializes the parameters from TOML format and creates a new
+/// SourceIdValidator instance.
+fn construct_source_id_validator(
+    config_params: toml::Value,
+) -> Result<Box<dyn EventValidator + Send + Sync>, PluginError> {
+    let config: SourceIdValidationConfig =
+        config_params.try_into().map_err(|e| PluginError::ParameterDeserialization {
+            plugin_name: "SourceIdValidator".to_string(),
+            source: e,
+        })?;
+    Ok(Box::new(SourceIdValidator::new(config)))
+}
+
+// Submit plugin to an inventory
+inventory::submit! {
+  ValidationPluginFactory {
+        name: "SourceIdValidator",
+        constructor: construct_source_id_validator,
     }
 }

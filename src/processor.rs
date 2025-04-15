@@ -19,7 +19,7 @@ impl Processor {
         Processor { events_map, plugins, config }
     }
 
-    #[tracing::instrument(skip(self, receiver))]
+    #[tracing::instrument(skip_all)]
     pub async fn run(&mut self, receiver: EventReceiver) {
         let batch_size = self.config.processor.batch_size;
         let batch_timeout = self.config.processor.batch_timeout;
