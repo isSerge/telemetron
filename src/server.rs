@@ -17,7 +17,7 @@ use crate::{
     config::Config,
     error::Error,
     event::Event,
-    processor::Processor,
+    processor::EventProcessorManager,
     state::AppState,
 };
 
@@ -106,7 +106,7 @@ pub async fn run_server(
     let config_clone = config.clone();
     // Spawn the processor
     tokio::spawn(async move {
-        let mut processor = Processor::new(events_map, processors, config_clone);
+        let mut processor = EventProcessorManager::new(events_map, processors, config_clone);
         processor.run(receiver).await;
     });
 

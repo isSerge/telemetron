@@ -8,15 +8,15 @@ use crate::{
     config::Config,
 };
 
-pub struct Processor {
+pub struct EventProcessorManager {
     events_map: EventsMap,
     plugins: EventProcessors,
     config: Arc<Config>,
 }
 
-impl Processor {
+impl EventProcessorManager {
     pub fn new(events_map: EventsMap, plugins: EventProcessors, config: Arc<Config>) -> Self {
-        Processor { events_map, plugins, config }
+        EventProcessorManager { events_map, plugins, config }
     }
 
     #[tracing::instrument(skip_all)]
