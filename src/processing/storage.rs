@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::{EventProcessor, ProcessingError};
 use crate::{
-    common_types::EventsMap,
+    common_types::TelemetryMap,
     config::NoParamsValidationConfig,
     event::Event,
     plugins::{PluginError, ProcessingPluginFactory},
@@ -21,7 +21,7 @@ impl StorageProcessor {
 impl EventProcessor for StorageProcessor {
     async fn process_event(
         &self,
-        events_map: &EventsMap,
+        telemetry_map: &TelemetryMap,
         events: &[Event],
     ) -> Result<(), ProcessingError> {
         if events.is_empty() {
@@ -42,7 +42,7 @@ impl EventProcessor for StorageProcessor {
                 continue;
             }
             tracing::debug!("Storing events for source_id: {}", source_id);
-            let mut source_events = events_map.entry(source_id).or_default();
+            let mut source_events = telemetry_map.entry(source_id).or_default();
             source_events.extend(events.into_iter().cloned());
         }
 

@@ -1,6 +1,6 @@
 pub mod storage;
 
-use crate::{common_types::EventsMap, event::Event};
+use crate::{common_types::TelemetryMap, event::Event};
 
 // TODO: add more specific errors
 #[derive(Debug, thiserror::Error)]
@@ -14,7 +14,7 @@ pub trait EventProcessor: Send + Sync {
     /// Process an event.
     async fn process_event(
         &self,
-        events_map: &EventsMap,
+        telemetry_map: &TelemetryMap,
         events: &[Event],
     ) -> Result<(), ProcessingError>;
 

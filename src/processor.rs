@@ -4,23 +4,23 @@ use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tracing::Instrument;
 
 use crate::{
-    common_types::{EventProcessors, EventReceiver, EventsMap},
+    common_types::{EventProcessors, EventReceiver, TelemetryMap},
     config::Config,
 };
 
 pub struct EventProcessorManager {
-    events_map: EventsMap,
+    telemetry_map: TelemetryMap,
     plugins: EventProcessors,
     config: Arc<Config>,
 }
 
 impl EventProcessorManager {
-    pub fn new(events_map: EventsMap, plugins: EventProcessors, config: Arc<Config>) -> Self {
-        EventProcessorManager { events_map, plugins, config }
+    pub fn new(telemetry_map: TelemetryMap, plugins: EventProcessors, config: Arc<Config>) -> Self {
+        EventProcessorManager { telemetry_map, plugins, config }
     }
 
     #[tracing::instrument(skip_all)]
-    pub async fn run(&mut self, receiver: EventReceiver) {
+    pub async fn run(&self, receiver: EventReceiver) {
         let batch_size = self.config.processor.batch_size;
         let batch_timeout = self.config.processor.batch_timeout;
 
@@ -48,7 +48,7 @@ impl EventProcessorManager {
                 tracing::info!("Processing batch of events");
                 for plugin in self.plugins.iter() {
                     tracing::info!("Processing with plugin: {}", plugin.name());
-                    match plugin.process_event(&self.events_map, &events_batch).await {
+                    match plugin.process_event(&self.telemetry_map, &events_batch).await {
                         Ok(_) => tracing::info!("Plugin {} processed event", plugin.name()),
                         Err(err) => {
                             tracing::error!(

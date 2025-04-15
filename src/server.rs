@@ -54,8 +54,8 @@ async fn ingest_handler(
 async fn stats_handler(State(state): State<AppState>) -> Result<impl IntoResponse, Error> {
     tracing::info!("Stats");
 
-    let sources_count = state.events_map.len();
-    let events_count: usize = state.events_map.iter().map(|x| x.len()).sum();
+    let sources_count = state.telemetry_map.len();
+    let events_count: usize = state.telemetry_map.iter().map(|x| x.len()).sum();
 
     let stats = Json(serde_json::json!({
         "sources_count": sources_count,
@@ -71,7 +71,7 @@ async fn stats_by_source_id_handler(
 ) -> Result<impl IntoResponse, Error> {
     tracing::info!("Stats by source id: {}", source_id);
 
-    let events_count = state.events_map.get(&source_id).map_or(0, |v| v.len());
+    let events_count = state.telemetry_map.get(&source_id).map_or(0, |v| v.len());
     let stats = Json(serde_json::json!({
         "source_id": source_id,
         "events_count": events_count,
@@ -97,16 +97,16 @@ pub async fn run_server(
     let (sender, receiver) = mpsc::channel::<Event>(config.processor.channel_capacity);
 
     // Create a map to store events by source id
-    let events_map = Arc::new(DashMap::new());
+    let telemetry_map = Arc::new(DashMap::new());
 
     // Initialize the application state
-    let app_state = AppState::new(sender, events_map.clone(), validators);
+    let app_state = AppState::new(sender, telemetry_map.clone(), validators);
 
     // Create another config clone - to be moved into the processor
     let config_clone = config.clone();
     // Spawn the processor
     tokio::spawn(async move {
-        let mut processor = EventProcessorManager::new(events_map, processors, config_clone);
+        let processor = EventProcessorManager::new(telemetry_map, processors, config_clone);
         processor.run(receiver).await;
     });
 

@@ -1,14 +1,18 @@
-use crate::common_types::{EventSender, EventValidators, EventsMap};
+use crate::common_types::{EventSender, EventValidators, TelemetryMap};
 
 #[derive(Debug, Clone)]
 pub struct AppState {
-    pub events_map: EventsMap,
+    pub telemetry_map: TelemetryMap,
     pub sender: EventSender,
     pub validators: EventValidators,
 }
 
 impl AppState {
-    pub fn new(sender: EventSender, events_map: EventsMap, validators: EventValidators) -> Self {
-        AppState { events_map, sender, validators }
+    pub fn new(
+        sender: EventSender,
+        telemetry_map: TelemetryMap,
+        validators: EventValidators,
+    ) -> Self {
+        AppState { telemetry_map, sender, validators }
     }
 }
