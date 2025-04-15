@@ -100,7 +100,7 @@ pub async fn run_server(
     let events_map = Arc::new(DashMap::new());
 
     // Initialize the application state
-    let app_state = AppState::new(sender, events_map.clone(), config.clone(), validators);
+    let app_state = AppState::new(sender, events_map.clone(), validators);
 
     // Create another config clone - to be moved into the processor
     let config_clone = config.clone();

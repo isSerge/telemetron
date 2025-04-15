@@ -1,26 +1,14 @@
-use std::sync::Arc;
-
-use crate::{
-    common_types::{EventSender, EventValidators, EventsMap},
-    config::Config,
-};
+use crate::common_types::{EventSender, EventValidators, EventsMap};
 
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub events_map: EventsMap,
     pub sender: EventSender,
-    // TODO: consider removing
-    pub config: Arc<Config>,
     pub validators: EventValidators,
 }
 
 impl AppState {
-    pub fn new(
-        sender: EventSender,
-        events_map: EventsMap,
-        config: Arc<Config>,
-        validators: EventValidators,
-    ) -> Self {
-        AppState { events_map, sender, config, validators }
+    pub fn new(sender: EventSender, events_map: EventsMap, validators: EventValidators) -> Self {
+        AppState { events_map, sender, validators }
     }
 }
