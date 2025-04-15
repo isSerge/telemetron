@@ -1,3 +1,4 @@
+pub mod source_telemetry;
 pub mod storage;
 
 use crate::{common_types::TelemetryMap, event::Event};

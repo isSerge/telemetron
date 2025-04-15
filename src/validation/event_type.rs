@@ -33,7 +33,7 @@ impl EventValidator for EventTypeValidator {
         if self.allowed_types.is_empty() || self.allowed_types.contains(&event.r#type) {
             Ok(())
         } else {
-            Err(EventValidationError::DisallowedEventType(event.r#type.clone()))
+            Err(EventValidationError::DisallowedEventType(event.r#type))
         }
     }
 }

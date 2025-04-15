@@ -1,11 +1,10 @@
-use std::collections::HashMap;
-
 use super::{EventProcessor, ProcessingError};
 use crate::{
     common_types::TelemetryMap,
     config::NoParamsValidationConfig,
     event::Event,
     plugins::{PluginError, ProcessingPluginFactory},
+    processing::source_telemetry::SourceTelemetry,
 };
 
 #[derive(Debug, Default)]
@@ -30,20 +29,25 @@ impl EventProcessor for StorageProcessor {
 
         tracing::debug!("Processing batch of events: {:?}", events.len());
 
-        // group events by source_id
-        let mut grouped_events: HashMap<u64, Vec<&Event>> = HashMap::new();
-        for event in events {
-            grouped_events.entry(event.source_id).or_default().push(event);
-        }
-
         // iterate over each group and store the events
-        for (source_id, events) in grouped_events {
+        for event in events {
             if events.is_empty() {
                 continue;
             }
-            tracing::debug!("Storing events for source_id: {}", source_id);
-            let mut source_events = telemetry_map.entry(source_id).or_default();
-            source_events.extend(events.into_iter().cloned());
+            let source_entry = telemetry_map.entry(event.source_id);
+
+            source_entry
+                // if the telemetry already exists, update it
+                .and_modify(|telemetry| {
+                    tracing::debug!("Updating telemetry for source_id: {}", event.source_id);
+                    telemetry.update(event)
+                })
+                // if the telemetry does not exist, create it
+                .or_insert_with(|| {
+                    tracing::debug!("Creating new telemetry for source_id: {}", event.source_id);
+                    
+                    SourceTelemetry::new(event)
+                });
         }
 
         tracing::debug!("Finish processing event batch");

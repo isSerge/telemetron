@@ -15,6 +15,8 @@ pub enum Error {
     Server(#[from] AxumError),
     #[error("Internal server error: {0}")]
     InternalServerError(String),
+    #[error("Not found")]
+    NotFound(String),
 }
 
 const INTERNAL_ERROR_MESSAGE: &str = "Internal server error";
@@ -37,6 +39,10 @@ impl IntoResponse for Error {
             Self::Server(e) => {
                 tracing::error!("Server error: {}", e);
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MESSAGE.to_string())
+            }
+            Self::NotFound(msg) => {
+                tracing::warn!("Not found: {}", msg);
+                (axum::http::StatusCode::NOT_FOUND, msg)
             }
         };
 

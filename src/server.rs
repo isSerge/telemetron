@@ -55,7 +55,10 @@ async fn stats_handler(State(state): State<AppState>) -> Result<impl IntoRespons
     tracing::info!("Stats");
 
     let sources_count = state.telemetry_map.len();
-    let events_count: usize = state.telemetry_map.iter().map(|x| x.len()).sum();
+    let events_count: u64 =
+        state.telemetry_map.iter().map(|entry| entry.value().total_events).sum();
+
+    // TODO: add more stats
 
     let stats = Json(serde_json::json!({
         "sources_count": sources_count,
@@ -71,13 +74,25 @@ async fn stats_by_source_id_handler(
 ) -> Result<impl IntoResponse, Error> {
     tracing::info!("Stats by source id: {}", source_id);
 
-    let events_count = state.telemetry_map.get(&source_id).map_or(0, |v| v.len());
-    let stats = Json(serde_json::json!({
-        "source_id": source_id,
-        "events_count": events_count,
-    }));
+    let entry = state.telemetry_map.get(&source_id);
 
-    Ok(stats)
+    match entry {
+        Some(entry) => {
+            let telemetry = entry.value();
+            let stats = Json(serde_json::json!({
+                "source_id": source_id,
+                "total_events": telemetry.total_events,
+                "first_event": telemetry.first_timestamp,
+                "last_event": telemetry.last_timestamp,
+                "event_types": telemetry.events_by_type,
+            }));
+            Ok(stats)
+        }
+        None => {
+            tracing::warn!("Source id {} not found", source_id);
+            Err(Error::NotFound(format!("Source id {} not found", source_id)))
+        }
+    }
 }
 
 async fn not_found_handler() -> impl IntoResponse {
