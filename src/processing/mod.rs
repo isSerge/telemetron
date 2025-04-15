@@ -1,14 +1,10 @@
+pub mod error;
 pub mod source_telemetry;
 pub mod storage;
 
-use crate::{common_types::TelemetryMap, event::Event};
+use error::ProcessingError;
 
-// TODO: add more specific errors
-#[derive(Debug, thiserror::Error)]
-pub enum ProcessingError {
-    #[error("Failed to store event: {0}")]
-    EventProcessingError(String),
-}
+use crate::{common_types::TelemetryMap, event::Event};
 
 #[async_trait::async_trait]
 pub trait EventProcessor: Send + Sync {
