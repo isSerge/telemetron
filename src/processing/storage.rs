@@ -11,6 +11,12 @@ use crate::{
 #[derive(Debug, Default)]
 pub struct StorageProcessor;
 
+impl StorageProcessor {
+    pub fn new(_config: NoParamsValidationConfig) -> Self {
+        Self
+    }
+}
+
 #[async_trait::async_trait]
 impl EventProcessor for StorageProcessor {
     async fn process_event(
@@ -58,12 +64,12 @@ fn construct_storage_processor(
 ) -> Result<Box<dyn EventProcessor + Send + Sync>, PluginError> {
     // StorageProcessor does not require any parameters, but keep deserialization
     // for consistency with other plugins
-    let _config: NoParamsValidationConfig =
+    let config: NoParamsValidationConfig =
         config_params.try_into().map_err(|e| PluginError::ParameterDeserialization {
             plugin_name: "StorageProcessor".to_string(),
             source: e,
         })?;
-    Ok(Box::new(StorageProcessor))
+    Ok(Box::new(StorageProcessor::new(config)))
 }
 
 // Submit plugin to an inventory
