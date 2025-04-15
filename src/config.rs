@@ -20,6 +20,10 @@ pub struct ProcessorConfig {
     pub batch_size: usize,
     #[serde(default = "default_batch_timeout")]
     pub batch_timeout: u64,
+    #[serde(default = "default_retry_attempts")]
+    pub retry_attempts: u32,
+    #[serde(default = "default_retry_delay")]
+    pub retry_delay: u64,
 }
 
 fn default_batch_size() -> usize {
@@ -27,6 +31,14 @@ fn default_batch_size() -> usize {
 }
 
 fn default_batch_timeout() -> u64 {
+    1000
+}
+
+fn default_retry_attempts() -> u32 {
+    3
+}
+
+fn default_retry_delay() -> u64 {
     1000
 }
 

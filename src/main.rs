@@ -19,11 +19,18 @@ use std::{error::Error, sync::Arc};
 
 use config::Config;
 use server::run_server;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize the tracing subscriber
-    tracing_subscriber::fmt().init();
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new(format!("{}={}", module_path!(), "info")))
+                .add_directive(format!("dlq_log={}", "error").parse()?),
+        )
+        .init();
 
     // Load the configuration
     let config = match Config::try_load() {
