@@ -101,6 +101,32 @@ async fn not_found_handler() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Not found")
 }
 
+async fn wait_for_shutdown() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c().await.expect("Failed to install Ctrl+C signal handler");
+        tracing::info!("Ctrl+C received, shutting down...");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("Failed to install SIGTERM signal handler")
+            .recv()
+            .await;
+        tracing::info!("SIGTERM received, shutting down...");
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending(); // No-op for non-Unix systems
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    tracing::info!("Termination signal received, shutting down...");
+}
+
 pub async fn run_server(
     config: Arc<Config>,
     validators: EventValidators,
@@ -115,12 +141,12 @@ pub async fn run_server(
     let telemetry_map = Arc::new(DashMap::new());
 
     // Initialize the application state
-    let app_state = AppState::new(sender, telemetry_map.clone(), validators);
+    let app_state = AppState::new(sender.clone(), telemetry_map.clone(), validators);
 
     // Create another config clone - to be moved into the processor
     let config_clone = config.clone();
     // Spawn the processor
-    tokio::spawn(async move {
+    let processor_handle = tokio::spawn(async move {
         let processor = EventProcessorManager::new(telemetry_map, processors, config_clone);
         processor.run(receiver).await;
     });
@@ -141,7 +167,21 @@ pub async fn run_server(
 
     tracing::info!("Listening on {}", listener.local_addr()?);
 
-    axum::serve(listener, routes.into_make_service()).await?;
+    axum::serve(listener, routes.into_make_service())
+        .with_graceful_shutdown(wait_for_shutdown())
+        .await?;
+
+    // Close the sender channel
+    tracing::info!("Closing event sender channel");
+    drop(sender);
+
+    // Wait for the processor to finish
+    if let Err(err) = processor_handle.await {
+        tracing::error!("Processor task failed: {}", err);
+        return Err(Error::InternalServerError("Processor task failed".into()));
+    }
+    tracing::info!("Processor task finished successfully");
+    tracing::info!("Telemetron shutdown complete");
 
     Ok(())
 }

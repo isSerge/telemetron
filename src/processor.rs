@@ -116,5 +116,8 @@ impl EventProcessorManager {
             .instrument(process_span)
             .await
         }
+        tracing::info!(
+            "Event receiver channel closed and all batches processed. Exiting processor loop."
+        );
     }
 }
