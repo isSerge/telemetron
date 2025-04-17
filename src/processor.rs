@@ -7,6 +7,9 @@ use tracing::Instrument;
 use crate::{
     common_types::{EventProcessors, EventReceiver, TelemetryMap},
     config::Config,
+    metrics::{
+        EVENTS_PROCESSED_TOTAL, PROCESSOR_PLUGIN_DURATION_SECONDS, PROCESSOR_PLUGIN_ERRORS_TOTAL,
+    },
     processing::error::ProcessingError,
 };
 
@@ -47,6 +50,8 @@ where
                     error = %err,
                     "DLQ: Operation failed permanently after {} attempts. Logging failed batch summary.", attempts
                 );
+                metrics::counter!(PROCESSOR_PLUGIN_ERRORS_TOTAL, "plugin" => plugin_name.to_owned())
+                    .increment(1);
                 return Err(err);
             }
         }
@@ -91,7 +96,11 @@ impl EventProcessorManager {
 
             async {
                 tracing::info!("Processing batch of events");
+
+                let mut batch_processed = true; // Flag to track if batch was processed successfully
+
                 for plugin in self.plugins.iter() {
+                    let start = std::time::Instant::now();
                     let name = plugin.name();
                     let retry_attempts = self.config.processor.retry_attempts;
                     let retry_delay = self.config.processor.retry_delay;
@@ -105,17 +114,43 @@ impl EventProcessorManager {
 
                     match result {
                         Ok(_) => {
+                            metrics::histogram!(
+                              PROCESSOR_PLUGIN_DURATION_SECONDS,
+                              "plugin" => name.to_owned(),
+                              "status" => "success"
+                            )
+                            .record(start.elapsed());
+
                             tracing::info!("Plugin {} processed events successfully", name);
                         }
-                        Err(_) => tracing::error!(
-                            "Plugin failed processing batch after all retries (see DLQ log)."
-                        ),
+                        Err(_) => {
+                            // Mark batch as not processed successfully
+                            batch_processed = false;
+                            metrics::histogram!(
+                              PROCESSOR_PLUGIN_DURATION_SECONDS,
+                              "plugin" => name.to_owned(),
+                              "status" => "error"
+                            )
+                            .record(start.elapsed());
+
+                            tracing::error!(
+                                "Plugin failed processing batch after all retries (see DLQ log)."
+                            )
+                        }
                     }
+                }
+
+                if batch_processed {
+                    metrics::counter!(EVENTS_PROCESSED_TOTAL).increment(events_batch.len() as u64);
+                    tracing::info!("Batch of {} processed successfully", events_batch.len());
+                } else {
+                    tracing::warn!("Failed to process batch of {} events", events_batch.len());
                 }
             }
             .instrument(process_span)
             .await
         }
+
         tracing::info!(
             "Event receiver channel closed and all batches processed. Exiting processor loop."
         );
