@@ -8,6 +8,7 @@ mod common_types;
 mod config;
 mod error;
 mod event;
+mod metrics;
 mod plugins;
 mod processing;
 mod processor;
@@ -31,6 +32,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .add_directive(format!("dlq_log={}", "error").parse()?),
         )
         .init();
+
+    // Setup metrics
+    let prometheus_handle = metrics::setup_metrics();
+    metrics::describe_metrics();
+    tracing::info!("Prometheus recorder installed.");
 
     // Load the configuration
     let config = match Config::try_load() {
@@ -70,7 +76,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    if let Err(err) = run_server(config, validators, processors).await {
+    if let Err(err) = run_server(config, validators, processors, prometheus_handle).await {
         tracing::error!("Error: {}", err);
         std::process::exit(1);
     }

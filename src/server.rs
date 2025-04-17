@@ -8,6 +8,7 @@ use axum::{
     routing::{get, post},
 };
 use dashmap::DashMap;
+use metrics_exporter_prometheus::PrometheusHandle;
 use tokio::{net::TcpListener, sync::mpsc};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::Level;
@@ -101,6 +102,10 @@ async fn not_found_handler() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Not found")
 }
 
+async fn metrics_handler(State(state): State<AppState>) {
+    unimplemented!();
+}
+
 async fn wait_for_shutdown() {
     let ctrl_c = async {
         tokio::signal::ctrl_c().await.expect("Failed to install Ctrl+C signal handler");
@@ -131,6 +136,7 @@ pub async fn run_server(
     config: Arc<Config>,
     validators: EventValidators,
     processors: EventProcessors,
+    prometheus_handle: PrometheusHandle,
 ) -> Result<(), Error> {
     tracing::info!("Starting Telemetron");
 
@@ -141,7 +147,8 @@ pub async fn run_server(
     let telemetry_map = Arc::new(DashMap::new());
 
     // Initialize the application state
-    let app_state = AppState::new(sender.clone(), telemetry_map.clone(), validators);
+    let app_state =
+        AppState::new(sender.clone(), telemetry_map.clone(), validators, prometheus_handle);
 
     // Create another config clone - to be moved into the processor
     let config_clone = config.clone();
@@ -155,6 +162,7 @@ pub async fn run_server(
         .route("/ingest", post(ingest_handler))
         .route("/stats", get(stats_handler))
         .route("/stats/{source_id}", get(stats_by_source_id_handler))
+        .route("/metrics", get(metrics_handler))
         .fallback(not_found_handler)
         .layer(
             TraceLayer::new_for_http()
