@@ -18,7 +18,7 @@ use crate::{
     config::Config,
     error::Error,
     event::Event,
-    metrics as metrics_consts,
+    metrics::{HTTP_REQUESTS_DURATION_SECONDS, HTTP_REQUESTS_TOTAL},
     processor::EventProcessorManager,
     state::AppState,
 };
@@ -32,14 +32,14 @@ async fn ingest_handler(
     tracing::info!("Ingest request");
 
     // Increment the total events counter
-    metrics::counter!(metrics_consts::HTTP_REQUESTS_TOTAL, "endpoint" => "/ingest").increment(1);
+    metrics::counter!(HTTP_REQUESTS_TOTAL, "endpoint" => "/ingest").increment(1);
     let event = event.0;
 
     for validator in state.validators.iter() {
         tracing::info!("Validating event with {}", validator.name());
         if let Err(err) = validator.validate(&event) {
             tracing::warn!("Event validation failed: {}", err);
-            metrics::histogram!(metrics_consts::HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/ingest", "status" => "4xx").record(start.elapsed());
+            metrics::histogram!(HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/ingest", "status" => "4xx").record(start.elapsed());
             return Err(Error::InvalidEvent(err));
         }
     }
@@ -48,12 +48,12 @@ async fn ingest_handler(
     match state.sender.send(event).await {
         Ok(_) => {
             tracing::info!("Event sent to channel");
-            metrics::histogram!(metrics_consts::HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/ingest", "status" => "2xx").record(start.elapsed());
+            metrics::histogram!(HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/ingest", "status" => "2xx").record(start.elapsed());
             Ok((StatusCode::ACCEPTED, "Success"))
         }
         Err(err) => {
             tracing::error!("Failed to send event to channel: {}", err);
-            metrics::histogram!(metrics_consts::HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/ingest", "status" => "5xx").record(start.elapsed());
+            metrics::histogram!(HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/ingest", "status" => "5xx").record(start.elapsed());
             Err(Error::InternalServerError("Failed to send event to channel".into()))
         }
     }
@@ -61,7 +61,7 @@ async fn ingest_handler(
 
 async fn stats_handler(State(state): State<AppState>) -> Result<impl IntoResponse, Error> {
     let start = Instant::now();
-    metrics::counter!(metrics_consts::HTTP_REQUESTS_TOTAL, "endpoint" => "/stats").increment(1);
+    metrics::counter!(HTTP_REQUESTS_TOTAL, "endpoint" => "/stats").increment(1);
 
     tracing::info!("Stats");
 
@@ -75,7 +75,8 @@ async fn stats_handler(State(state): State<AppState>) -> Result<impl IntoRespons
         "events_count": events_count,
     }));
 
-    metrics::histogram!(metrics_consts::HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/stats", "status" => "2xx").record(start.elapsed());
+    metrics::histogram!(HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/stats", "status" => "2xx")
+        .record(start.elapsed());
 
     Ok(stats)
 }
@@ -85,8 +86,7 @@ async fn stats_by_source_id_handler(
     Path(source_id): Path<u64>,
 ) -> Result<impl IntoResponse, Error> {
     let start = Instant::now();
-    metrics::counter!(metrics_consts::HTTP_REQUESTS_TOTAL, "endpoint" => "/stats/{source_id}")
-        .increment(1);
+    metrics::counter!(HTTP_REQUESTS_TOTAL, "endpoint" => "/stats/{source_id}").increment(1);
     tracing::info!("Stats by source id: {}", source_id);
 
     let entry = state.telemetry_map.get(&source_id);
@@ -102,7 +102,7 @@ async fn stats_by_source_id_handler(
                 "event_types": telemetry.events_by_type,
             }));
             metrics::histogram!(
-                metrics_consts::HTTP_REQUESTS_DURATION_SECONDS,
+                HTTP_REQUESTS_DURATION_SECONDS,
                 "endpoint" => "/stats/{source_id}",
                 "status" => "2xx"
             )
@@ -112,7 +112,7 @@ async fn stats_by_source_id_handler(
         None => {
             tracing::warn!("Source id {} not found", source_id);
             metrics::histogram!(
-                metrics_consts::HTTP_REQUESTS_DURATION_SECONDS,
+                HTTP_REQUESTS_DURATION_SECONDS,
                 "endpoint" => "/stats/{source_id}",
                 "status" => "4xx"
             )
@@ -123,14 +123,14 @@ async fn stats_by_source_id_handler(
 }
 
 async fn not_found_handler() -> impl IntoResponse {
-    metrics::counter!(metrics_consts::HTTP_REQUESTS_TOTAL, "endpoint" => "/404").increment(1);
+    metrics::counter!(HTTP_REQUESTS_TOTAL, "endpoint" => "/404").increment(1);
     tracing::info!("Not found");
 
     (StatusCode::NOT_FOUND, "Not found")
 }
 
 async fn metrics_handler(State(state): State<AppState>) -> impl IntoResponse {
-    metrics::counter!(metrics_consts::HTTP_REQUESTS_TOTAL, "endpoint" => "/metrics").increment(1);
+    metrics::counter!(HTTP_REQUESTS_TOTAL, "endpoint" => "/metrics").increment(1);
 
     let body = state.prometheus_handle.render();
     let headers = [(
