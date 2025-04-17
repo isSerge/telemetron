@@ -117,7 +117,9 @@ impl Config {
             // Load the default config file
             .add_source(config::File::from(config_path).required(true))
             // Load environment variables
-            .add_source(Environment::with_prefix("TELEMETRON").prefix_separator("_").separator("_"))
+            .add_source(
+                Environment::with_prefix("TELEMETRON").prefix_separator("_").separator("__"),
+            )
             .build()?;
 
         Ok(config_builder)
