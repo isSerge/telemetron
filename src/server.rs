@@ -23,6 +23,9 @@ use crate::{
     state::AppState,
 };
 
+/// Handler for the `/ingest` endpoint.
+/// It validates the incoming event using the configured validators and sends it
+/// to the channel.
 #[tracing::instrument(skip(state), fields(source_id = event.source_id))]
 async fn ingest_handler(
     State(state): State<AppState>,
@@ -59,6 +62,8 @@ async fn ingest_handler(
     }
 }
 
+/// Handler for the `/stats` endpoint.
+/// It returns the total number of sources and events processed.
 async fn stats_handler(State(state): State<AppState>) -> Result<impl IntoResponse, Error> {
     let start = Instant::now();
     metrics::counter!(HTTP_REQUESTS_TOTAL, "endpoint" => "/stats").increment(1);
@@ -81,6 +86,8 @@ async fn stats_handler(State(state): State<AppState>) -> Result<impl IntoRespons
     Ok(stats)
 }
 
+/// Handler for the `/stats/{source_id}` endpoint.
+/// It returns the telemetry data for the specified source id.
 async fn stats_by_source_id_handler(
     State(state): State<AppState>,
     Path(source_id): Path<u64>,
@@ -122,6 +129,7 @@ async fn stats_by_source_id_handler(
     }
 }
 
+/// Handler for the `/404` endpoint.
 async fn not_found_handler() -> impl IntoResponse {
     metrics::counter!(HTTP_REQUESTS_TOTAL, "endpoint" => "/404").increment(1);
     tracing::info!("Not found");
@@ -129,6 +137,8 @@ async fn not_found_handler() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, "Not found")
 }
 
+/// Handler for the `/metrics` endpoint.
+/// It returns the Prometheus metrics in the OpenMetrics format.
 async fn metrics_handler(State(state): State<AppState>) -> impl IntoResponse {
     metrics::counter!(HTTP_REQUESTS_TOTAL, "endpoint" => "/metrics").increment(1);
 
@@ -140,6 +150,19 @@ async fn metrics_handler(State(state): State<AppState>) -> impl IntoResponse {
     (StatusCode::OK, headers, body)
 }
 
+/// Handler for the `/healthz` endpoint.
+/// It returns a simple "OK" response to indicate that the server is healthy.
+async fn healthz_handler() -> impl IntoResponse {
+    let strart = Instant::now();
+    tracing::info!("Health check");
+    metrics::counter!(HTTP_REQUESTS_TOTAL, "endpoint" => "/healthz").increment(1);
+    metrics::histogram!(HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/healthz", "status" => "2xx").record(strart.elapsed());
+    (StatusCode::OK, "OK")
+}
+
+/// Wait for shutdown signals.
+/// This function listens for Ctrl+C and SIGTERM signals to gracefully shut down
+/// the server.
 async fn wait_for_shutdown() {
     let ctrl_c = async {
         tokio::signal::ctrl_c().await.expect("Failed to install Ctrl+C signal handler");
@@ -166,6 +189,9 @@ async fn wait_for_shutdown() {
     tracing::info!("Termination signal received, shutting down...");
 }
 
+/// Run the server.
+/// This function initializes the server, sets up the routes, and starts
+/// listening
 pub async fn run_server(
     config: Arc<Config>,
     validators: EventValidators,
@@ -197,6 +223,7 @@ pub async fn run_server(
         .route("/stats", get(stats_handler))
         .route("/stats/{source_id}", get(stats_by_source_id_handler))
         .route("/metrics", get(metrics_handler))
+        .route("/healthz", get(healthz_handler))
         .fallback(not_found_handler)
         .layer(
             TraceLayer::new_for_http()
