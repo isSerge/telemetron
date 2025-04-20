@@ -19,6 +19,11 @@ impl EventTypeValidator {
                 "EventTypeValidator initialized with no allowed event types. This will allow all \
                  event types."
             );
+        } else {
+            tracing::info!(
+                "EventTypeValidator initialized with allowed event types: {:?}",
+                config.allowed
+            );
         }
         Self { allowed_types: config.allowed }
     }
@@ -33,7 +38,7 @@ impl EventValidator for EventTypeValidator {
         if self.allowed_types.is_empty() || self.allowed_types.contains(&event.r#type) {
             Ok(())
         } else {
-            Err(EventValidationError::DisallowedEventType(event.r#type))
+            Err(EventValidationError::DisallowedEventType(event.r#type.clone()))
         }
     }
 }

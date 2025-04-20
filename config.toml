@@ -6,8 +6,13 @@ port = 3000
 channel_capacity = 100
 
 [validation.plugins]
+# The following is a list of allowed source IDs. Empty means all are allowed.
 SourceIdValidator = { allowed = [123] }
+# The following is a list of allowed event types. Empty means all are allowed.
+# Also supports custom event types.
+# Example: ["Heartbeat", "CustomEvent"]
 EventTypeValidator = { allowed = ["Heartbeat"] }
 
 [processing.plugins]
+# Storage processor is default processor, it does not need any configuration.
 StorageProcessor = {}

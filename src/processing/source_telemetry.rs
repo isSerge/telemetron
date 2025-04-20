@@ -15,7 +15,7 @@ pub struct SourceTelemetry {
 impl SourceTelemetry {
     pub fn new(event: &Event) -> Self {
         let mut events_by_type = HashMap::new();
-        events_by_type.insert(event.r#type, 1);
+        events_by_type.insert(event.r#type.clone(), 1);
 
         Self {
             total_events: 1,
@@ -29,6 +29,6 @@ impl SourceTelemetry {
         self.total_events += 1;
         self.first_timestamp = self.first_timestamp.min(event.timestamp);
         self.last_timestamp = self.last_timestamp.max(event.timestamp);
-        *self.events_by_type.entry(event.r#type).or_insert(0) += 1;
+        *self.events_by_type.entry(event.r#type.clone()).or_insert(0) += 1;
     }
 }
