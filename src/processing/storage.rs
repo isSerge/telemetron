@@ -23,10 +23,6 @@ impl EventProcessor for StorageProcessor {
         telemetry_map: &TelemetryMap,
         events: &[Event],
     ) -> Result<(), ProcessingError> {
-        if events.is_empty() {
-            return Ok(());
-        }
-
         tracing::debug!("Processing batch of events: {:?}", events.len());
 
         // iterate over each group and store the events
@@ -45,7 +41,7 @@ impl EventProcessor for StorageProcessor {
                 // if the telemetry does not exist, create it
                 .or_insert_with(|| {
                     tracing::debug!("Creating new telemetry for source_id: {}", event.source_id);
-                    
+
                     SourceTelemetry::new(event)
                 });
         }
@@ -81,5 +77,105 @@ inventory::submit! {
   ProcessingPluginFactory {
         name: "StorageProcessor",
         constructor: construct_storage_processor,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use chrono::Utc;
+    use dashmap::DashMap;
+
+    use super::*;
+    use crate::{
+        common_types::TelemetryMap,
+        event::{Event, EventType},
+    };
+
+    /// Creates a new telemetry map for testing purposes.
+    fn create_map() -> TelemetryMap {
+        Arc::new(DashMap::new())
+    }
+
+    /// Creates a new event for testing purposes.
+    fn create_event(source_id: u64, event_type: EventType) -> Event {
+        Event { source_id, r#type: event_type, timestamp: Utc::now(), data: None }
+    }
+
+    #[tokio::test]
+    async fn test_empty_batch() {
+        let processor = StorageProcessor::new(NoParamsValidationConfig::default());
+        let telemetry_map = create_map();
+        let events: Vec<Event> = vec![];
+
+        // Process an empty batch of events
+        let result = processor.process_event(&telemetry_map, &events).await;
+
+        assert!(result.is_ok());
+        assert!(telemetry_map.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_single_event() {
+        let processor = StorageProcessor::new(NoParamsValidationConfig::default());
+        let telemetry_map = create_map();
+        let events = vec![create_event(1, EventType::Heartbeat)];
+
+        // Process a single event
+        let result = processor.process_event(&telemetry_map, &events).await;
+
+        assert!(result.is_ok());
+        assert_eq!(telemetry_map.len(), 1);
+        assert!(telemetry_map.contains_key(&1));
+    }
+
+    #[tokio::test]
+    async fn test_multiple_events() {
+        let processor = StorageProcessor::new(NoParamsValidationConfig::default());
+        let telemetry_map = create_map();
+        let events = vec![
+            create_event(1, EventType::Heartbeat),
+            create_event(2, EventType::Custom("CustomEvent".to_string())),
+            create_event(1, EventType::Heartbeat),
+        ];
+
+        // Process multiple events
+        let result = processor.process_event(&telemetry_map, &events).await;
+
+        assert!(result.is_ok());
+        assert_eq!(telemetry_map.len(), 2);
+        assert!(telemetry_map.contains_key(&1));
+        assert!(telemetry_map.contains_key(&2));
+    }
+
+    #[tokio::test]
+    async fn test_update_same_source_id() {
+        let processor = StorageProcessor::new(NoParamsValidationConfig::default());
+        let telemetry_map = create_map();
+        let events = vec![
+            create_event(1, EventType::Heartbeat),
+            create_event(1, EventType::Custom("CustomEvent".to_string())),
+        ];
+
+        // Process events that update the same source_id
+        let result = processor.process_event(&telemetry_map, &events).await;
+
+        assert!(result.is_ok());
+        assert_eq!(telemetry_map.len(), 1);
+        assert!(telemetry_map.contains_key(&1));
+
+        let entry = telemetry_map.get(&1);
+
+        assert!(entry.is_some());
+
+        match entry {
+            Some(telemetry) => {
+                assert_eq!(telemetry.value().total_events, 2);
+                assert_eq!(telemetry.value().events_by_type.len(), 2);
+                assert_eq!(telemetry.value().last_timestamp, events[1].timestamp);
+            }
+            None => panic!("Telemetry entry should exist"),
+        }
     }
 }
