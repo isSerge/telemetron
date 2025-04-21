@@ -105,7 +105,7 @@ impl EventProcessorManager {
                     let retry_attempts = self.config.processor.retry_attempts;
                     let retry_delay = self.config.processor.retry_delay;
 
-                    tracing::info!("Processing with plugin: {}", name);
+                    tracing::debug!("Processing with plugin: {}", name);
 
                     let operation = || plugin.process_event(&self.telemetry_map, &events_batch);
 
