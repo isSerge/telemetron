@@ -57,7 +57,7 @@ async fn ingest_handler(
         Err(err) => {
             tracing::error!("Failed to send event to channel: {}", err);
             metrics::histogram!(HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/ingest", "status" => "5xx").record(start.elapsed());
-            Err(Error::InternalServerError("Failed to send event to channel".into()))
+            Err(Error::Internal("Failed to send event to channel".into()))
         }
     }
 }
@@ -247,7 +247,7 @@ pub async fn run_server(
     // Wait for the processor to finish
     if let Err(err) = processor_handle.await {
         tracing::error!("Processor task failed: {}", err);
-        return Err(Error::InternalServerError("Processor task failed".into()));
+        return Err(Error::Internal("Processor task failed".into()));
     }
     tracing::info!("Processor task finished successfully");
     tracing::info!("Telemetron shutdown complete");
