@@ -61,3 +61,47 @@ inventory::submit! {
         constructor: construct_source_id_validator,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::Utc;
+
+    use super::*;
+    use crate::event::{Event, EventType};
+
+    /// Creates a new event for testing purposes.
+    fn create_event(source_id: u64, event_type: EventType) -> Event {
+        Event { source_id, r#type: event_type, timestamp: Utc::now(), data: None }
+    }
+
+    fn get_allowed_ids() -> HashSet<u64> {
+        vec![1, 2, 3].into_iter().collect()
+    }
+
+    #[test]
+    fn test_validates_allowed_source_id() {
+        let validator =
+            SourceIdValidator::new(SourceIdValidationConfig { allowed: get_allowed_ids() });
+
+        let event = create_event(1, EventType::Heartbeat);
+        assert!(validator.validate(&event).is_ok());
+    }
+
+    #[test]
+    fn test_validates_disallowed_source_id() {
+        let validator =
+            SourceIdValidator::new(SourceIdValidationConfig { allowed: get_allowed_ids() });
+
+        let event = create_event(4, EventType::Heartbeat);
+        assert!(validator.validate(&event).is_err());
+    }
+
+    #[test]
+    fn test_validates_empty_allowed_source_ids() {
+        let validator =
+            SourceIdValidator::new(SourceIdValidationConfig { allowed: HashSet::new() });
+
+        let event = create_event(4, EventType::Heartbeat);
+        assert!(validator.validate(&event).is_ok());
+    }
+}
