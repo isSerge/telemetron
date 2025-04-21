@@ -66,3 +66,44 @@ inventory::submit! {
         constructor: construct_event_type_validator,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::Utc;
+
+    use super::*;
+    use crate::event::EventType;
+
+    #[test]
+    fn test_validates_allowed_event_type() {
+        let allowed = HashSet::from([EventType::Heartbeat, EventType::Custom("Test".to_string())]);
+        let config = EventTypeValidationConfig { allowed };
+        let validator = EventTypeValidator::new(config);
+        let event =
+            Event { source_id: 1, r#type: EventType::Heartbeat, timestamp: Utc::now(), data: None };
+
+        assert!(validator.validate(&event).is_ok());
+    }
+
+    #[test]
+    fn test_validates_disallowed_event_type() {
+        let allowed = HashSet::from([EventType::Custom("Test".to_string())]);
+        let config = EventTypeValidationConfig { allowed };
+        let validator = EventTypeValidator::new(config);
+        let event =
+            Event { source_id: 1, r#type: EventType::Heartbeat, timestamp: Utc::now(), data: None };
+
+        assert!(validator.validate(&event).is_err());
+    }
+
+    #[test]
+    fn test_validates_empty_allowed_event_types() {
+        let allowed = HashSet::new();
+        let config = EventTypeValidationConfig { allowed };
+        let validator = EventTypeValidator::new(config);
+        let event =
+            Event { source_id: 1, r#type: EventType::Heartbeat, timestamp: Utc::now(), data: None };
+
+        assert!(validator.validate(&event).is_ok());
+    }
+}
