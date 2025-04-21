@@ -153,10 +153,10 @@ async fn metrics_handler(State(state): State<AppState>) -> impl IntoResponse {
 /// Handler for the `/healthz` endpoint.
 /// It returns a simple "OK" response to indicate that the server is healthy.
 async fn healthz_handler() -> impl IntoResponse {
-    let strart = Instant::now();
+    let start = Instant::now();
     tracing::info!("Health check");
     metrics::counter!(HTTP_REQUESTS_TOTAL, "endpoint" => "/healthz").increment(1);
-    metrics::histogram!(HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/healthz", "status" => "2xx").record(strart.elapsed());
+    metrics::histogram!(HTTP_REQUESTS_DURATION_SECONDS, "endpoint" => "/healthz", "status" => "2xx").record(start.elapsed());
     (StatusCode::OK, "OK")
 }
 
