@@ -1,18 +1,32 @@
 [http]
-host = "0.0.0.0"
-port = 3000
+host = "127.0.0.1"
+port = 8080
 
 [processor]
-channel_capacity = 100
+channel_capacity = 10000 # Max events buffered between server and processor
+batch_size = 100        # Max events per processing batch
+batch_timeout = 1000    # Max time (ms) to wait before processing an incomplete batch
+retry_attempts = 3      # Attempts for a processor plugin on failure
+retry_delay = 1000      # Delay (ms) between retries
 
-[validation.plugins]
-# The following is a list of allowed source IDs. Empty means all are allowed.
-SourceIdValidator = { allowed = [123] }
-# The following is a list of allowed event types. Empty means all are allowed.
-# Also supports custom event types.
-# Example: ["Heartbeat", "CustomEvent"]
-EventTypeValidator = { allowed = ["Heartbeat"] }
+# Configure enabled validation plugins and their parameters
+[validation.plugins] 
+# Example: Enable SourceIdValidator
+# [validation.plugins.SourceIdValidator]
+# allowed = [1001, 1002, 2005] # Only allow events from these source IDs
 
+# Example: Enable EventTypeValidator
+# [validation.plugins.EventTypeValidator]
+# allowed = ["Heartbeat", "UserLogin"] # Allow Heartbeat and a custom "UserLogin" type
+
+
+# Configure enabled processing plugins and their parameters
 [processing.plugins]
-# Storage processor is default processor, it does not need any configuration.
-StorageProcessor = {}
+# Example: Enable the built-in StorageProcessor (no params needed)
+[processing.plugins.StorageProcessor]
+# No parameters needed for StorageProcessor, empty table indicates activation
+
+# Example: Placeholder for a potential database plugin
+# [processing.plugins.DatabaseLogger]
+# connection_string = "postgres://user:pass@host/db"
+# table_name = "events"
